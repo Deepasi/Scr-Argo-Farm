@@ -72,13 +72,13 @@ interface Order {
   total: number;
   status: string;
   created_at: string;
-  customer_name: string;
-  customer_email: string;
-  customer_phone: string;
-  delivery_address: string;
-  delivery_city: string;
-  delivery_state: string;
-  delivery_zip_code: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  zip_code: string;
   payment_method: string;
   order_items: OrderItem[];
 }
@@ -101,13 +101,9 @@ const Orders: React.FC = () => {
   };
 
   // Fetch user's orders with order items and try to get product details
-  const {
-    data: orders,
-    isLoading,
-    error
-  } = useQuery({
+  const { data: orders, isLoading, error } = useQuery<Order[], Error>({
     queryKey: ['orders', user?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<Order[]> => {
       if (!user) return [];
 
       try {
@@ -120,13 +116,13 @@ const Orders: React.FC = () => {
             total, 
             status, 
             created_at,
-            customer_name,
-            customer_email,
-            customer_phone,
-            delivery_address,
-            delivery_city,
-            delivery_state,
-            delivery_zip_code,
+            name,
+            email,
+            phone,
+            address,
+            city,
+            state,
+            zip_code,
             payment_method,
             order_items (
               id, 
@@ -139,7 +135,7 @@ const Orders: React.FC = () => {
               )
             )
           `)
-          .eq('user_id', user.id)
+          .eq('user_id', user?.id)
           .order('created_at', { ascending: false });
 
         if (error) {
@@ -154,13 +150,13 @@ const Orders: React.FC = () => {
               total, 
               status, 
               created_at,
-              customer_name,
-              customer_email,
-              customer_phone,
-              delivery_address,
-              delivery_city,
-              delivery_state,
-              delivery_zip_code,
+              name,
+              email,
+              phone,
+              address,
+              city,
+              state,
+              zip_code,
               payment_method,
               order_items (
                 id, 
@@ -173,10 +169,11 @@ const Orders: React.FC = () => {
             .order('created_at', { ascending: false });
 
           if (fallbackError) throw fallbackError;
-          return fallbackData || [];
+          return (fallbackData || []) as unknown as Order[];      // Remove "unknown" when order_number is fixed, since its sending null
         }
+        console.log(data);
 
-        return data || [];
+        return (data || []) as unknown as Order[];      // Remove "unknown" when order_number is fixed, since its sending null
       } catch (err) {
         console.error('Query error:', err);
         throw err;
@@ -208,6 +205,7 @@ const Orders: React.FC = () => {
     return products.reduce((acc, product) => {
       acc[product.id] = product;
       return acc;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }, {} as Record<string, any>);
   }, [products]);
 
@@ -263,17 +261,17 @@ const Orders: React.FC = () => {
 
         <div className="space-y-4">
           {orders.map((order) => {
-            const orderDate = new Date(order.created_at);
-            const totalItems = order.order_items.reduce(
+            const orderDate = new Date(order?.created_at);
+            const totalItems = order?.order_items.reduce(
               (sum, item) => sum + item.quantity,
               0
             );
-            const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
+            const statusConfig = STATUS_CONFIG[order?.status] || STATUS_CONFIG.pending;
             const StatusIcon = statusConfig.icon;
-            const isExpanded = expandedOrders.has(order.id);
+            const isExpanded = expandedOrders.has(order?.id);
 
             return (
-              <Card key={order.id} className="w-full shadow-sm border-gray-500 hover:shadow-md transition-shadow hover:border-gray-900 hover:bg-gray-300">
+              <Card key={order?.id} className="w-full shadow-sm border-gray-500 hover:shadow-md transition-shadow hover:border-gray-900 hover:bg-gray-300">
                 <CardHeader className="pb-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -281,7 +279,7 @@ const Orders: React.FC = () => {
                         <div className="mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 text-left">
                           <div className="flex flex-col items-start">
                             <CardTitle className="text-lg font-semibold">
-                              Order #{order.order_number || order.id.slice(0, 8).toUpperCase()}
+                              Order #{order?.order_number || order?.id.slice(0, 8).toUpperCase()}
                             </CardTitle>
 
                             {/* Only show on small screens (left aligned) */}
@@ -313,14 +311,14 @@ const Orders: React.FC = () => {
                         <span>•</span>
                         <span>{totalItems} item{totalItems !== 1 ? 's' : ''}</span>
                         <span>•</span>
-                        <span className="font-medium text-gray-900">₹{order.total.toFixed(2)}</span>
+                        <span className="font-medium text-gray-900">₹{order?.total.toFixed(2)}</span>
                       </div>
                     </div>
 
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => toggleOrderExpansion(order.id)}
+                      onClick={() => toggleOrderExpansion(order?.id)}
                       className="ml-4 flex items-center gap-1 text-gray-600 hover:text-gray-900 text-xs sm:text-sm"
 
                     >
@@ -353,7 +351,7 @@ const Orders: React.FC = () => {
                       </div>
                     </div>
                     <div className="space-y-2 sm:space-y-0">
-                      {order.order_items.map((item) => {
+                      {order?.order_items.map((item) => {
                         const productInfo = item.products || productMap[item.product_id];
                         return (
                           <div
@@ -425,15 +423,15 @@ const Orders: React.FC = () => {
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                               <span className="text-gray-600">Name:</span>
-                              <span className="font-medium">{order.customer_name || 'Not provided'}</span>
+                              <span className="font-medium">{order?.name || 'Not provided'}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-600">Email:</span>
-                              <span className="font-medium">{order.customer_email || 'Not provided'}</span>
+                              <span className="font-medium">{order?.email || 'Not provided'}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-600">Phone:</span>
-                              <span className="font-medium">{order.customer_phone || 'Not provided'}</span>
+                              <span className="font-medium">{order.phone || 'Not provided'}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-600">Payment:</span>
@@ -451,14 +449,14 @@ const Orders: React.FC = () => {
                             Delivery Address
                           </h3>
                           <div className="text-sm">
-                            {order.delivery_address || order.delivery_city || order.delivery_state ? (
+                            {order.address || order.city || order.state ? (
                               <div className="space-y-1">
-                                {order.delivery_address && (
-                                  <p className="font-medium">{order.delivery_address}</p>
+                                {order.address && (
+                                  <p className="font-medium">{order.address}</p>
                                 )}
-                                {(order.delivery_city || order.delivery_state || order.delivery_zip_code) && (
+                                {(order.city || order.state || order.zip_code) && (
                                   <p className="text-gray-600">
-                                    {[order.delivery_city, order.delivery_state, order.delivery_zip_code]
+                                    {[order.city, order.state, order.zip_code]
                                       .filter(Boolean)
                                       .join(', ')}
                                   </p>
